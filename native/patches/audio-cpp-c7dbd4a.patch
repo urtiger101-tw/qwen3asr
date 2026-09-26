@@ -1,0 +1,137 @@
+diff --git a/scripts/build_windows.ps1 b/scripts/build_windows.ps1
+index 45dc6dc..70777e9 100644
+--- a/scripts/build_windows.ps1
++++ b/scripts/build_windows.ps1
+@@ -14,6 +14,7 @@ param(
+     [ValidateSet("ON", "OFF")]
+     [string]$Llamafile = $null,
+     [switch]$DeploymentBuild,
++    [switch]$BuildCAPI,
+     [switch]$NativeModelManager,
+     [switch]$SystemOpenSsl,
+     [string]$BoringSslArchive = "",
+@@ -21,7 +22,9 @@ param(
+     [string]$ModelSet = "full",
+     [string]$Models = "",
+     [string]$Version = "dev",
+-    [string]$VsInstall = ""
++    [string]$VsInstall = "",
++    [string]$BuildDirectory = "",
++    [string]$MsvcToolset = ""
+ )
+ 
+ Set-StrictMode -Version Latest
+@@ -194,7 +197,8 @@ function Add-MsvcEnvironment {
+     param(
+         [Parameter(Mandatory = $true)][string]$VsInstall,
+         [Parameter(Mandatory = $true)][string]$Cl,
+-        [Parameter(Mandatory = $true)][string]$SdkTool
++        [Parameter(Mandatory = $true)][string]$SdkTool,
++        [string]$MsvcToolset = ""
+     )
+ 
+     # A stray double quote in PATH (some installers write one) is fatal here:
+@@ -207,7 +211,8 @@ function Add-MsvcEnvironment {
+ 
+     $vcvars = Join-Path $VsInstall "VC\Auxiliary\Build\vcvars64.bat"
+     if (Test-Path $vcvars) {
+-        $cmd = "`"$vcvars`" >nul && set"
++        $vcvarsVersion = if ($MsvcToolset -ne "") { " -vcvars_ver=$MsvcToolset" } else { "" }
++        $cmd = "`"$vcvars`"$vcvarsVersion >nul && set"
+         foreach ($line in (& cmd.exe /d /s /c $cmd)) {
+             if ($line -match "^([^=]+)=(.*)$") {
+                 $name = $Matches[1]
+@@ -518,7 +523,11 @@ if ($vsInstall -eq "") {
+     throw "Visual Studio Build Tools C++ workload was not found. Install Build Tools 2022 or newer with MSVC, Windows SDK, CMake/Ninja, and OpenMP."
+ }
+ 
+-$cl = Find-MsvcCompiler $vsInstall
++$cl = if ($MsvcToolset -ne "") {
++    Join-Path $vsInstall "VC\Tools\MSVC\$MsvcToolset\bin\Hostx64\x64\cl.exe"
++} else {
++    Find-MsvcCompiler $vsInstall
++}
+ $cmake = Find-VsCMake $vsInstall
+ $ninja = Find-VsNinja $vsInstall
+ $mt = Find-WindowsKitTool "mt.exe"
+@@ -527,7 +536,7 @@ if ($cl -eq "" -or $cmake -eq "" -or $ninja -eq "" -or $mt -eq "" -or $rc -eq ""
+     throw "Missing Build Tools component. Need cl.exe, cmake.exe, ninja.exe, mt.exe, and rc.exe."
+ }
+ 
+-Add-MsvcEnvironment $vsInstall $cl $mt
++Add-MsvcEnvironment $vsInstall $cl $mt $MsvcToolset
+ Add-PathFront (Split-Path $ninja -Parent)
+ $arch = if ($isCudaPreset) { Resolve-CudaArchitectures } else { "" }
+ 
+@@ -553,6 +562,7 @@ Write-Host "CPU architecture profile: $($cpuArchSettings.Label)"
+ Write-Host "Native CPU optimization: $($settings.Native)"
+ Write-Host "llamafile SGEMM: $($settings.Llamafile)"
+ $deploymentBuildValue = if ($DeploymentBuild) { "ON" } else { "OFF" }
++$capiBuildValue = if ($BuildCAPI) { "ON" } else { "OFF" }
+ $nativeModelManagerValue = if ($NativeModelManager) { "ON" } else { "OFF" }
+ $systemOpenSslValue = if ($SystemOpenSsl) { "ON" } else { "OFF" }
+ Write-Host "Deployment build: $deploymentBuildValue"
+@@ -578,7 +588,7 @@ if ($Clean) {
+ }
+ 
+ $sourceDir = Split-Path $PSScriptRoot -Parent
+-$buildDir = Join-Path (Join-Path $sourceDir "build") $Preset
++$buildDir = if ($BuildDirectory -ne "") { $BuildDirectory } else { Join-Path (Join-Path $sourceDir "build") $Preset }
+ 
+ $configureArgs = @(
+     "-S", $sourceDir,
+@@ -604,6 +614,7 @@ $configureArgs = @(
+     "-DENGINE_ENABLE_LLAMAFILE=$($settings.Llamafile)",
+     "-DENGINE_BUILD_TESTS=$($settings.BuildTests)",
+     "-DAUDIOCPP_DEPLOYMENT_BUILD=$deploymentBuildValue",
++    "-DAUDIOCPP_BUILD_C_API=$capiBuildValue",
+     "-DAUDIOCPP_BUILD_NATIVE_MODEL_MANAGER=$nativeModelManagerValue",
+     "-DAUDIOCPP_USE_SYSTEM_OPENSSL=$systemOpenSslValue",
+     "-DAUDIOCPP_VERSION=$Version",
+@@ -624,6 +635,7 @@ if ($settings.CxxFlagsDebug -ne "") {
+ }
+ if ($isCudaPreset) {
+     $configureArgs += "-DCUDAToolkit_ROOT=$(Convert-ToCMakePath $cudaRoot)"
++    $configureArgs += "-DCMAKE_CUDA_COMPILER=$(Convert-ToCMakePath (Join-Path $cudaRoot 'bin/nvcc.exe'))"
+     $configureArgs += "-DCMAKE_CUDA_HOST_COMPILER=$(Convert-ToCMakePath $cl)"
+     $configureArgs += "-DCMAKE_CUDA_FLAGS=-Xcompiler=/utf-8"
+     $configureArgs += "-DOpenMP_CUDA_FLAGS=/openmp:experimental"
+diff --git a/src/framework/modules/pitch_extractors/rmvpe_pitch_extractor.cpp b/src/framework/modules/pitch_extractors/rmvpe_pitch_extractor.cpp
+index 815382e..8799b23 100644
+--- a/src/framework/modules/pitch_extractors/rmvpe_pitch_extractor.cpp
++++ b/src/framework/modules/pitch_extractors/rmvpe_pitch_extractor.cpp
+@@ -402,8 +402,8 @@ std::vector<float> compute_rmvpe_log_mel(
+         threads);
+     const int64_t freq_bins = magnitude.shape[1];
+     const int64_t frames = magnitude.shape[2];
+-    static const RmvpeMelFilterbank mel_filter = [] {
+-        constexpr int64_t freq_bins = kNfft / 2 + 1;
++    static const RmvpeMelFilterbank mel_filter = [=] {
++        const int64_t freq_bins = kNfft / 2 + 1;
+         std::vector<double> mel_points(static_cast<size_t>(kRmvpeMelBins + 2), 0.0);
+         const auto hz_to_mel = [](double hz) {
+             return 2595.0 * std::log10(1.0 + hz / 700.0);
+diff --git a/src/models/qwen3_asr/thinker.cpp b/src/models/qwen3_asr/thinker.cpp
+index 17a4fa3..8e1332c 100644
+--- a/src/models/qwen3_asr/thinker.cpp
++++ b/src/models/qwen3_asr/thinker.cpp
+@@ -817,14 +817,19 @@ struct Qwen3ASRThinkerRuntime::Impl {
+         Qwen3ASRGeneratedTokens out;
+         std::vector<float> logits = std::move(prefill.logits);
+         timing_start = Clock::now();
++        bool finished = false;
+         for (int64_t step = 0; step < options.max_new_tokens; ++step) {
+             const int32_t token = argmax_index(logits);
+             if (is_eos(config, token)) {
++                finished = true;
+                 break;
+             }
+             out.token_ids.push_back(token);
+             logits = decode_graph->run_step(token);
+         }
++        if (!finished) {
++            throw std::runtime_error("Qwen3 ASR generation reached max_tokens without EOS");
++        }
+         debug::timing_log_scalar("qwen3_asr.thinker.decode_total_ms", engine::debug::elapsed_ms(timing_start, Clock::now()));
+         return out;
+     }

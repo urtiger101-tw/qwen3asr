@@ -1,0 +1,26 @@
+[package]
+name = "qwen3asr"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+description = "Native Rust/C++ Qwen3-ASR CLI with CUDA, CPU and aligned subtitles"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml_edit = "0.22"
+dirs = "6"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+sha2 = "0.10"
+tempfile = "3"
+chrono = { version = "0.4", features = ["serde"] }
+fs2 = "0.4"
+ctrlc = "3"
+opencc-fmmseg = "=0.12.1"
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+strip = true
