@@ -1,6 +1,6 @@
 [package]
 name = "qwen3asr"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 license = "MIT"
 description = "Native Rust/C++ Qwen3-ASR CLI with CUDA, CPU and aligned subtitles"

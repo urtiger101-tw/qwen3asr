@@ -2,13 +2,15 @@
 
 Checked 2026-09-27 for the Windows x64 native v0.2 build. This record pins the FFmpeg command-line build used for local validation; it is not a complete third-party source bundle or legal determination.
 
-## v0.2 source-only publication
+## v0.2.1 public installer
 
-The public GitHub push is source-only. Keep `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe`, and downloaded FFmpeg archives out of the public Git tree. The local installer prepared for the project owner may use the pinned build below. The public source repository does not itself redistribute those binaries.
+The v0.2.1 public Inno installer contains compiled Qwen3ASR and native inference runtimes. It does **not** embed FFmpeg executables or their archive: during installation, it downloads the pinned ZIP directly from the upstream BtbN release URL below, checks its SHA-256, extracts only the required tools and license into the installation, and verifies the exact executable hashes. An explicit local archive option accepts only the same pinned checksum. The installed tools can subsequently run offline.
+
+Keep `ffmpeg.exe`, `ffprobe.exe`, `ffplay.exe`, and downloaded FFmpeg archives out of the public Git tree and public release assets. The older v0.2.0 installer containing those binaries was delivered locally and was never uploaded as a release asset.
 
 If a future public installer or release includes FFmpeg binaries, do not treat the upstream FFmpeg source tarball or the package's `LICENSE.txt` as complete source provenance: this static build also contains external libraries. Include source and license information for the exact dependencies enabled in the delivered executables, or replace this broad prebuilt with a narrower reproducible build and its complete source materials.
 
-## Recommended local Windows build
+## Pinned upstream Windows build
 
 Use BtbN's static `win64-lgpl` build, pinned to the dated release tag rather than the floating `latest` alias:
 

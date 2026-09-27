@@ -8,25 +8,28 @@
 [Setup]
 AppId={{BC30E4CA-27B1-4A3F-9C4F-278F8D7E6CA0}
 AppName=Qwen3ASR
-AppVersion=0.2.0
-AppVerName=Qwen3ASR 0.2.0
+AppVersion=0.2.1
+AppVerName=Qwen3ASR 0.2.1
 AppPublisher=Qwen3ASR
+LicenseFile={#StageDir}\native\cuda\licenses\CUDA-EULA.txt
 DefaultDirName={autopf}\Qwen3ASR
+UsePreviousAppDir=no
 DefaultGroupName=Qwen3ASR
 DisableProgramGroupPage=yes
-PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
-UsePreviousPrivileges=yes
+PrivilegesRequired=admin
+PrivilegesRequiredOverridesAllowed=dialog commandline
+UsePreviousPrivileges=no
 ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
 ChangesEnvironment=yes
+ArchiveExtraction=full
 SetupLogging=yes
 OutputDir=..\dist
-OutputBaseFilename=qwen3asr-0.2.0-setup
+OutputBaseFilename=qwen3asr-0.2.1-setup
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
-UninstallDisplayName=Qwen3ASR 0.2.0
+UninstallDisplayName=Qwen3ASR 0.2.1
 UninstallLogging=yes
 
 [Languages]
@@ -35,6 +38,14 @@ Name: "chinesetraditional"; MessagesFile: "compiler:Languages\ChineseTraditional
 
 [CustomMessages]
 english.AddToPathTask=Add Qwen3ASR to this install scope's PATH
+english.DownloadModelTask=Prepare speech and alignment models for my account (default about 2.3 GB)
+english.FfmpegDownload=Downloading verified FFmpeg tools
+english.FfmpegExtract=Extracting verified FFmpeg tools
+english.FfmpegPrepareFailed=FFmpeg preparation failed: %1. Setup log: %2
+english.ModelDownloadFailed=The model download failed with exit code %1. Run qwen3asr setup --download-model to retry. Setup log: %2
+english.ModelStartFailed=Could not start the model download (error code %1). Run qwen3asr setup --download-model to retry. Setup log: %2
+english.ModelInProgress=Downloading and verifying models for your Windows account (about 2.3 GB by default)...
+english.MachinePathRequiresProgramFiles=All-users installation uses the protected Program Files\Qwen3ASR directory for its system PATH entry. Remove /DIR or choose current-user installation.
 english.CodexTask=Configure the Codex integration
 english.AgyTask=Configure the AGY integration
 english.ClaudeTask=Configure the Claude integration
@@ -48,6 +59,14 @@ english.UninstallIntegrationFailed=Removal of the %1 integration returned exit c
 english.UninstallIntegrationNotOwned=Skipped removal of the %1 integration because this install's current-user ownership marker did not match its install path. Client settings were left untouched. Uninstall log: %2
 english.UninstallIntegrationMarkerFailed=The %1 integration was removed, but its current-user ownership marker could not be cleared. Uninstall log: %2
 chinesetraditional.AddToPathTask=將 Qwen3ASR 加入目前安裝範圍的 PATH
+chinesetraditional.DownloadModelTask=為我的帳戶下載辨識與對齊模型（預設約 2.3 GB）
+chinesetraditional.FfmpegDownload=下載已驗證的 FFmpeg 工具
+chinesetraditional.FfmpegExtract=解壓縮已驗證的 FFmpeg 工具
+chinesetraditional.FfmpegPrepareFailed=FFmpeg 準備失敗：%1。安裝記錄：%2
+chinesetraditional.ModelDownloadFailed=模型下載失敗，結束碼為 %1。可執行 qwen3asr setup --download-model 重試。安裝記錄：%2
+chinesetraditional.ModelStartFailed=無法啟動模型下載（錯誤碼 %1）。可執行 qwen3asr setup --download-model 重試。安裝記錄：%2
+chinesetraditional.ModelInProgress=正在為您的 Windows 帳戶下載並驗證模型（預設約 2.3 GB）…
+chinesetraditional.MachinePathRequiresProgramFiles=所有使用者安裝的系統 PATH 必須指向受保護的 Program Files\Qwen3ASR 資料夾。請移除 /DIR，或改選目前使用者安裝。
 chinesetraditional.CodexTask=設定 Codex 整合
 chinesetraditional.AgyTask=設定 AGY 整合
 chinesetraditional.ClaudeTask=設定 Claude 整合
@@ -63,6 +82,7 @@ chinesetraditional.UninstallIntegrationMarkerFailed=%1 整合已移除，但無�
 
 [Tasks]
 Name: "addtopath"; Description: "{cm:AddToPathTask}"; Flags: checkedonce
+Name: "downloadmodel"; Description: "{cm:DownloadModelTask}"; Flags: checkedonce
 Name: "codex"; Description: "{cm:CodexTask}"; Flags: unchecked; Check: not IsAdminInstallMode
 Name: "agy"; Description: "{cm:AgyTask}"; Flags: unchecked; Check: not IsAdminInstallMode
 Name: "claude"; Description: "{cm:ClaudeTask}"; Flags: unchecked; Check: not IsAdminInstallMode
@@ -71,8 +91,9 @@ Name: "claude"; Description: "{cm:ClaudeTask}"; Flags: unchecked; Check: not IsA
 Source: "{#StageDir}\qwen3asr.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StageDir}\native\cpu\*"; DestDir: "{app}\native\cpu"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\native\cuda\*"; DestDir: "{app}\native\cuda"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#StageDir}\native\ffmpeg.exe"; DestDir: "{app}\native"; Flags: ignoreversion
-Source: "{#StageDir}\native\ffprobe.exe"; DestDir: "{app}\native"; Flags: ignoreversion
+Source: "{tmp}\qwen3asr-ffmpeg\ffmpeg-n8.1.3-win64-lgpl-8.1\bin\ffmpeg.exe"; DestDir: "{app}\native"; Flags: external ignoreversion
+Source: "{tmp}\qwen3asr-ffmpeg\ffmpeg-n8.1.3-win64-lgpl-8.1\bin\ffprobe.exe"; DestDir: "{app}\native"; Flags: external ignoreversion
+Source: "{tmp}\qwen3asr-ffmpeg\ffmpeg-n8.1.3-win64-lgpl-8.1\LICENSE.txt"; DestDir: "{app}\native\licenses"; DestName: "FFmpeg-LGPL-3.0.txt"; Flags: external ignoreversion
 Source: "{#StageDir}\native\licenses\*"; DestDir: "{app}\native\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StageDir}\skills\qwen3asr\SKILL.md"; DestDir: "{app}\skills\qwen3asr"; Flags: ignoreversion
 Source: "{#StageDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -84,9 +105,18 @@ Source: "{#StageDir}\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recurs
 const
   PathSubkeyUser = 'Environment';
   PathSubkeySystem = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
+  FFmpegUrl = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-26-13-03/ffmpeg-n8.1.3-win64-lgpl-8.1.zip';
+  FFmpegArchiveName = 'ffmpeg-n8.1.3-win64-lgpl-8.1.zip';
+  FFmpegArchiveSHA256 = '933b9625fb4b0dc2e1e96cf20fb54b94ed24ba561858418de29531fb7c88ad74';
+  FFmpegExeSHA256 = 'eb8767af3352ac23ddca6926d408783f0a8a7fb79f8c54af55cea9078a43e8ff';
+  FFprobeExeSHA256 = '3a95af3d9307f0904e6da5a598d436d46562a161bd9a8c1b822f10e52185cba8';
+  FFmpegLicenseSHA256 = 'da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768';
+  FFmpegArchiveRoot = 'ffmpeg-n8.1.3-win64-lgpl-8.1';
 
 var
   RequestedActionsFailed: Boolean;
+  FFmpegDownloadPage: TDownloadWizardPage;
+  FFmpegExtractionPage: TExtractionWizardPage;
 
 function InitializeSetup: Boolean;
 begin
@@ -94,11 +124,198 @@ begin
   Result := True;
 end;
 
+procedure InitializeWizard;
+begin
+  FFmpegDownloadPage := CreateDownloadPage(CustomMessage('FfmpegDownload'),
+    SetupMessage(msgPreparingDesc), nil);
+  FFmpegDownloadPage.ShowBaseNameInsteadOfUrl := True;
+  FFmpegExtractionPage := CreateExtractionPage(CustomMessage('FfmpegExtract'),
+    SetupMessage(msgPreparingDesc), nil);
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := (PageID = wpSelectDir) and IsAdminInstallMode;
+end;
+
+function MachineInstallDirIsProtectedLocation: Boolean;
+begin
+  Result := CompareText(RemoveBackslashUnlessRoot(ExpandConstant('{app}')),
+    RemoveBackslashUnlessRoot(ExpandConstant('{commonpf}\Qwen3ASR'))) = 0;
+end;
+
+function FFmpegSourceRoot: String;
+begin
+  Result := ExpandConstant('{tmp}\qwen3asr-ffmpeg\' + FFmpegArchiveRoot);
+end;
+
+function FileHasHash(const FileName, ExpectedSHA256: String): Boolean;
+begin
+  Result := False;
+  if not FileExists(FileName) then
+    Exit;
+  Result := CompareText(GetSHA256OfFile(FileName), ExpectedSHA256) = 0;
+end;
+
+function FFmpegFilesVerified(const Root: String): Boolean;
+begin
+  Result := FileHasHash(Root + '\bin\ffmpeg.exe', FFmpegExeSHA256) and
+    FileHasHash(Root + '\bin\ffprobe.exe', FFprobeExeSHA256) and
+    FileHasHash(Root + '\LICENSE.txt', FFmpegLicenseSHA256);
+end;
+
+function InstalledFFmpegFilesVerified: Boolean;
+var
+  Root: String;
+begin
+  Root := ExpandConstant('{app}\native');
+  Result := FileHasHash(Root + '\ffmpeg.exe', FFmpegExeSHA256) and
+    FileHasHash(Root + '\ffprobe.exe', FFprobeExeSHA256) and
+    FileHasHash(Root + '\licenses\FFmpeg-LGPL-3.0.txt', FFmpegLicenseSHA256);
+end;
+
+function SilentCudaEulaAccepted: Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+  begin
+    if CompareText(ParamStr(I), '/ACCEPTCUDAEULA') = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
+function OfflineFFmpegArchive: String;
+var
+  I: Integer;
+  Arg: String;
+begin
+  Result := '';
+  for I := 1 to ParamCount do
+  begin
+    Arg := ParamStr(I);
+    if Pos('/FFMPEGARCHIVE=', UpperCase(Arg)) = 1 then
+    begin
+      Result := Trim(Copy(Arg, Length('/FFMPEGARCHIVE=') + 1, Length(Arg)));
+      if (Length(Result) >= 2) and (Result[1] = '"') and
+        (Result[Length(Result)] = '"') then
+        Result := Copy(Result, 2, Length(Result) - 2);
+      Exit;
+    end;
+  end;
+end;
+
+procedure CopyVerifiedInstalledFFmpeg;
+var
+  PreviousRoot, SourceRoot: String;
+begin
+  PreviousRoot := ExpandConstant('{app}\native');
+  SourceRoot := FFmpegSourceRoot;
+  if not ForceDirectories(SourceRoot + '\bin') then
+    RaiseException('Could not create temporary FFmpeg directory');
+    if not CopyFile(PreviousRoot + '\ffmpeg.exe', SourceRoot + '\bin\ffmpeg.exe', False) or
+    not CopyFile(PreviousRoot + '\ffprobe.exe', SourceRoot + '\bin\ffprobe.exe', False) or
+    not CopyFile(PreviousRoot + '\licenses\FFmpeg-LGPL-3.0.txt', SourceRoot + '\LICENSE.txt', False) then
+    RaiseException('Could not stage verified installed FFmpeg files');
+end;
+
+procedure PrepareFFmpeg;
+var
+  ArchivePath, OfflineArchive, ExtractRoot: String;
+begin
+  OfflineArchive := OfflineFFmpegArchive;
+  ArchivePath := ExpandConstant('{tmp}\' + FFmpegArchiveName);
+  ExtractRoot := ExpandConstant('{tmp}\qwen3asr-ffmpeg');
+
+  if OfflineArchive <> '' then
+  begin
+    if not FileHasHash(OfflineArchive, FFmpegArchiveSHA256) then
+      RaiseException('The /FFMPEGARCHIVE file is missing or does not match the pinned SHA-256');
+    Log('Using SHA-256 verified local FFmpeg archive: ' + OfflineArchive);
+    if not CopyFile(OfflineArchive, ArchivePath, False) then
+      RaiseException('Could not copy the verified local FFmpeg archive to the temporary directory');
+  end
+  else if InstalledFFmpegFilesVerified then
+  begin
+    Log('Reusing SHA-256 verified FFmpeg binaries and license from the selected install directory.');
+    CopyVerifiedInstalledFFmpeg;
+    if not FFmpegFilesVerified(FFmpegSourceRoot) then
+      RaiseException('The reused FFmpeg files changed while staging');
+    Exit;
+  end
+  else
+  begin
+    Log('Downloading pinned FFmpeg archive directly from ' + FFmpegUrl);
+    FFmpegDownloadPage.Clear;
+    FFmpegDownloadPage.Add(FFmpegUrl, FFmpegArchiveName, FFmpegArchiveSHA256);
+    FFmpegDownloadPage.Show;
+    try
+      FFmpegDownloadPage.Download;
+    finally
+      FFmpegDownloadPage.Hide;
+    end;
+  end;
+
+  if not FileHasHash(ArchivePath, FFmpegArchiveSHA256) then
+    RaiseException('The FFmpeg archive failed the pinned SHA-256 check');
+  FFmpegExtractionPage.Clear;
+  FFmpegExtractionPage.Add(ArchivePath, ExtractRoot, True);
+  FFmpegExtractionPage.Show;
+  try
+    FFmpegExtractionPage.Extract;
+  finally
+    FFmpegExtractionPage.Hide;
+  end;
+  if not FFmpegFilesVerified(FFmpegSourceRoot) then
+    RaiseException('The FFmpeg archive did not contain the expected binaries and license');
+  Log('FFmpeg binaries and license passed individual SHA-256 checks.');
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  ErrorText: String;
+begin
+  Result := True;
+  if CurPageID <> wpReady then
+    Exit;
+  if IsAdminInstallMode and not MachineInstallDirIsProtectedLocation then
+  begin
+    Log('[PATH safety] Refusing all-users install outside {commonpf}\Qwen3ASR.');
+    SuppressibleMsgBox(CustomMessage('MachinePathRequiresProgramFiles'), mbCriticalError, MB_OK, IDOK);
+    Result := False;
+    Exit;
+  end;
+  if WizardSilent and not SilentCudaEulaAccepted then
+  begin
+    Log('[CUDA license] Silent setup requires explicit /ACCEPTCUDAEULA.');
+    Result := False;
+    Exit;
+  end;
+  try
+    PrepareFFmpeg;
+  except
+    ErrorText := GetExceptionMessage;
+    Log('[FFmpeg preparation failure] ' + ErrorText);
+    if (FFmpegDownloadPage <> nil) and FFmpegDownloadPage.AbortedByUser then
+      Log('FFmpeg download cancelled by user.')
+    else if (FFmpegExtractionPage <> nil) and FFmpegExtractionPage.AbortedByUser then
+      Log('FFmpeg extraction cancelled by user.')
+    else
+      SuppressibleMsgBox(FmtMessage(CustomMessage('FfmpegPrepareFailed'), [ErrorText,
+        ExpandConstant('{log}')]), mbCriticalError, MB_OK, IDOK);
+    Result := False;
+  end;
+end;
+
 function GetCustomSetupExitCode: Integer;
 begin
   if RequestedActionsFailed then
   begin
-    Log('[setup failure] A requested PATH or integration action failed; returning exit code 10.');
+    Log('[setup failure] A requested PATH, model, or integration action failed; returning exit code 10.');
     Result := 10;
   end
   else
@@ -366,6 +583,42 @@ begin
   Log('[integration success] Target ' + Target);
 end;
 
+procedure DownloadDefaultModel;
+var
+  ResultCode: Integer;
+  Started: Boolean;
+  PreviousStatus: String;
+begin
+  Log('Starting default model download as the original interactive user.');
+  ResultCode := 0;
+  PreviousStatus := WizardForm.StatusLabel.Caption;
+  WizardForm.StatusLabel.Caption := CustomMessage('ModelInProgress');
+  try
+    Started := ExecAsOriginalUser(ExpandConstant('{app}\qwen3asr.exe'),
+      'setup --download-model', ExpandConstant('{app}'), SW_SHOW,
+      ewWaitUntilTerminated, ResultCode);
+  finally
+    WizardForm.StatusLabel.Caption := PreviousStatus;
+  end;
+  if not Started then
+  begin
+    RequestedActionsFailed := True;
+    Log('[model download failure] Could not start qwen3asr setup --download-model; error code ' + IntToStr(ResultCode));
+    SuppressibleMsgBox(FmtMessage(CustomMessage('ModelStartFailed'), [IntToStr(ResultCode),
+      ExpandConstant('{log}')]), mbError, MB_OK, IDOK);
+    Exit;
+  end;
+  if ResultCode <> 0 then
+  begin
+    RequestedActionsFailed := True;
+    Log('[model download failure] qwen3asr setup --download-model returned exit code ' + IntToStr(ResultCode));
+    SuppressibleMsgBox(FmtMessage(CustomMessage('ModelDownloadFailed'), [IntToStr(ResultCode),
+      ExpandConstant('{log}')]), mbError, MB_OK, IDOK);
+    Exit;
+  end;
+  Log('[model download success] qwen3asr setup --download-model completed.');
+end;
+
 procedure RunOwnedIntegrationRemoval(const Target: String);
 var
   InstallDir, RecordedInstallDir, Owned: String;
@@ -426,6 +679,8 @@ begin
       SuppressibleMsgBox(CustomMessage('PathAddFailed'), mbError, MB_OK, IDOK);
     end;
   end;
+  if (CurStep = ssPostInstall) and WizardIsTaskSelected('downloadmodel') then
+    DownloadDefaultModel;
   if (CurStep = ssPostInstall) and not IsAdminInstallMode and WizardIsTaskSelected('codex') then
     RunIntegration('codex');
   if (CurStep = ssPostInstall) and not IsAdminInstallMode and WizardIsTaskSelected('agy') then

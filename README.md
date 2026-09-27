@@ -4,7 +4,9 @@ Windows 本機語音辨識 CLI，以 **Rust 主程式 + C++ / GGML 推論**實�
 
 ## 安裝與開始
 
-執行建置產生的 `dist/qwen3asr-0.2.0-setup.exe`，保留「加入 PATH」，安裝後開啟新的終端機。本 repository 公開原始碼；目前未公開散布含第三方二進位檔的安裝包。
+下載 [Windows 已編譯安裝版](https://github.com/urtiger101-tw/qwen3asr/releases/latest)，執行 `qwen3asr-0.2.1-setup.exe`。不需要安裝 Rust、C++、Python 或 CUDA Toolkit。
+
+安裝器預設選擇「所有使用者」，經 Windows UAC 確認後安裝到 Program Files 並加入**系統 PATH**。保留「下載模型」即可在安裝期間準備辨識與對齊模型；只安裝給目前使用者時可切換安裝範圍，使用使用者 PATH。完成後開啟新的終端機。
 
 ```powershell
 qwen3asr recording.mp3
@@ -12,7 +14,7 @@ qwen3asr meeting.mp4 --language zh --traditional
 qwen3asr doctor --json
 ```
 
-第一次辨識自動下載固定版本、校驗 SHA-256 的 `0.6b-q8` ASR 與 `aligner-q8` 模型，合計約 2.3 GB。原生 CPU/CUDA 引擎與 FFmpeg 已包含在安裝包；模型權重另外下載。預留至少 5 GB 可用磁碟空間，另加輸出與既有模型快取。辨識時音訊留在本機，準備完成後支援離線使用。
+原生 CPU/CUDA 引擎已編譯並包含在安裝包。安裝期間從固定上游下載 FFmpeg／FFprobe（約 171 MB），驗證 SHA-256 後安裝；模型下載工作另外準備 `0.6b-q8` ASR 與 `aligner-q8`（合計約 2.3 GB），也驗證固定版本與 SHA-256。若取消勾選模型下載，第一次辨識會自動補下載。預留至少 5 GB 可用磁碟空間，另加輸出與既有模型快取。辨識時音訊留在本機，準備完成後支援離線使用。
 
 預設輸出原檔旁的 UTF-8 TXT、帶精準時間軸的 SRT、JSON。JSON 包含逐字時間、字幕、實際裝置、量測記憶體、警告與檔案路徑。既有輸出受到保護，覆寫必須加 `--overwrite`。
 
@@ -76,7 +78,7 @@ qwen3asr languages
 
 ## Agent、Skill 與 MCP
 
-安裝器可選 Codex、AGY、Claude 整合；同一支 CLI 也可操作：
+目前使用者安裝可選 Codex、AGY、Claude 整合；所有使用者安裝後，各帳戶在自己的終端機使用同一支 CLI 設定：
 
 ```powershell
 qwen3asr agents install --target codex --dry-run

@@ -36,7 +36,7 @@ MCP 是以官方 SDK 驗證協定與實際工作流程；不宣稱已在每一�
 - 檔名：`qwen3asr-0.2.0-setup.exe`
 - 大小：567,169,414 bytes
 - SHA-256：`f0074cb8ab5e26fb8c65775d089ebc3c3299efcb2cd0c25d1c828944ff9b47a7`
-- 本 repository 公開原始碼；本次沒有公開發布第三方二進位安裝包。相關散布範圍見 [FFmpeg 文件](ffmpeg-distribution.md)。
+- 此處記錄的是 0.2.0 當時的本機交付，該版安裝包未公開發布。0.2.1 起提供公開編譯版，媒體工具改由安裝器直接向上游下載，見 [FFmpeg 文件](ffmpeg-distribution.md)。
 
 CUDA 安裝包以 compute capability 8.6 為最低要求；其他架構可從原始碼重建，較舊裝置預設使用 CPU。模型權重不隨 repo 或安裝包散布，首次使用另外下載並校驗。
 

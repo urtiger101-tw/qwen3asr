@@ -2,8 +2,6 @@
 param(
     [string]$IsccPath,
     [string]$NativeRoot,
-    [string]$FfmpegPath,
-    [string]$FfprobePath,
     [string]$OutputDir,
     [switch]$SkipBuild
 )
@@ -15,9 +13,9 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $scriptDir ".."))
 $distDir = Join-Path $repoRoot "dist"
 $stageRoot = Join-Path $repoRoot ".ag-artifacts\packaging-stage"
-$stageName = "native-0.2.0-{0}-{1}" -f (Get-Date -Format "yyyyMMdd-HHmmss"), ([Guid]::NewGuid().ToString("N"))
+$stageName = "native-0.2.1-online-{0}-{1}" -f (Get-Date -Format "yyyyMMdd-HHmmss"), ([Guid]::NewGuid().ToString("N"))
 $stageDir = Join-Path $stageRoot $stageName
-$setupName = "qwen3asr-0.2.0-setup.exe"
+$setupName = "qwen3asr-0.2.1-setup.exe"
 $buildScript = Join-Path $scriptDir "build-launcher.ps1"
 $installerScript = Join-Path $repoRoot "installer\qwen3asr.iss"
 
@@ -112,8 +110,6 @@ try {
         $NativeRoot = Join-Path $repoRoot "native\bin"
     }
     $NativeRoot = Resolve-RepoOrAbsolutePath $NativeRoot (Join-Path $repoRoot "native\bin")
-    $FfmpegPath = Resolve-RepoOrAbsolutePath $FfmpegPath (Join-Path $NativeRoot "ffmpeg.exe")
-    $FfprobePath = Resolve-RepoOrAbsolutePath $FfprobePath (Join-Path $NativeRoot "ffprobe.exe")
     $IsccPath = Find-IsccPath $IsccPath
     if ([string]::IsNullOrWhiteSpace($OutputDir)) {
         $OutputDir = $distDir
@@ -137,8 +133,7 @@ try {
         (Join-Path $repoRoot "docs\installation.md"),
         (Join-Path $repoRoot "skills\qwen3asr\SKILL.md"),
         (Join-Path $NativeRoot "licenses"),
-        $FfmpegPath,
-        $FfprobePath,
+        (Join-Path $NativeRoot "cuda\licenses\CUDA-EULA.txt"),
         $buildScript,
         $installerScript,
         $IsccPath
@@ -151,8 +146,8 @@ try {
     }
     # -SkipBuild reuses a binary but never bypasses the release identity gate.
     $cliVersion = & (Join-Path $repoRoot "target\release\qwen3asr.exe") --version
-    if ($LASTEXITCODE -ne 0 -or ($cliVersion -join "`n").Trim() -ne 'qwen3asr 0.2.0') {
-        throw "The CLI binary does not match installer version 0.2.0. Build the current release first."
+    if ($LASTEXITCODE -ne 0 -or ($cliVersion -join "`n").Trim() -ne 'qwen3asr 0.2.1') {
+        throw "The CLI binary does not match installer version 0.2.1. Build the current release first."
     }
 
     $expectedPatchHash = (Get-FileHash -LiteralPath (Join-Path $repoRoot "native\patches\audio-cpp-c7dbd4a.patch") -Algorithm SHA256).Hash
@@ -197,9 +192,13 @@ try {
     Copy-Tree (Join-Path $NativeRoot "licenses") (Join-Path $nativeStage "licenses") "native runtime license files"
     Copy-Tree (Join-Path $repoRoot "native\notices") (Join-Path $nativeStage "licenses") "project dependency license notices"
 
+    # The verified upstream archive supplies the exact FFmpeg license at install time.
+    $stagedFfmpegLicense = Join-Path $nativeStage "licenses\FFmpeg-LGPL-3.0.txt"
+    if (Test-Path -LiteralPath $stagedFfmpegLicense) {
+        Remove-Item -LiteralPath $stagedFfmpegLicense
+    }
+
     Copy-Item -LiteralPath (Join-Path $repoRoot "target\release\qwen3asr.exe") -Destination (Join-Path $stageFull "qwen3asr.exe")
-    Copy-Item -LiteralPath $FfmpegPath -Destination (Join-Path $nativeStage "ffmpeg.exe")
-    Copy-Item -LiteralPath $FfprobePath -Destination (Join-Path $nativeStage "ffprobe.exe")
     Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination (Join-Path $stageFull "README.md")
     Copy-Item -LiteralPath (Join-Path $repoRoot "LICENSE") -Destination (Join-Path $stageFull "LICENSE")
     Copy-Item -LiteralPath (Join-Path $repoRoot "THIRD_PARTY_NOTICES.md") -Destination (Join-Path $stageFull "THIRD_PARTY_NOTICES.md")
@@ -223,6 +222,13 @@ try {
         }
     }
 
+    $unexpectedMediaPayload = Get-ChildItem -LiteralPath $stageFull -Recurse -File | Where-Object {
+        $_.Name -in @("ffmpeg.exe", "ffprobe.exe", "ffmpeg-n8.1.3-win64-lgpl-8.1.zip")
+    }
+    if ($unexpectedMediaPayload) {
+        throw "Public online installer stage contains an FFmpeg binary/archive: $($unexpectedMediaPayload.FullName -join ', ')"
+    }
+
     foreach ($backend in @("cpu", "cuda")) {
         $worker = Join-Path $nativeStage "$backend\qwen3asr-worker.exe"
         & $worker --probe
@@ -231,15 +237,6 @@ try {
             throw "The staged $backend worker probe failed with exit code $workerExitCode"
         }
     }
-    & (Join-Path $nativeStage "ffmpeg.exe") -version | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "The staged ffmpeg.exe failed its version check with exit code $LASTEXITCODE"
-    }
-    & (Join-Path $nativeStage "ffprobe.exe") -version | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw "The staged ffprobe.exe failed its version check with exit code $LASTEXITCODE"
-    }
-
     $null = New-Item -ItemType Directory -Path $OutputDir -Force
     $previousStageEnvironment = [Environment]::GetEnvironmentVariable("QWEN3ASR_PACKAGING_STAGE_DIR", "Process")
     try {

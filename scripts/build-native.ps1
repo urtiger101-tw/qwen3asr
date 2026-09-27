@@ -179,6 +179,7 @@ foreach ($targetBackend in $targets) {
         'audio.cpp-APACHE-2.0.txt' = 'LICENSE'
         'ggml-MIT.txt' = 'external\ggml\LICENSE'
         'cJSON-MIT.txt' = 'external\cJSON\LICENSE'
+        'libyaml-MIT.txt' = 'external\libyaml\License'
         'sentencepiece-APACHE-2.0.txt' = 'external\sentencepiece\LICENSE'
         'sentencepiece-protobuf-lite.txt' = 'external\sentencepiece\third_party\protobuf-lite\LICENSE'
         'sentencepiece-esaxx.txt' = 'external\sentencepiece\third_party\esaxx\LICENSE'

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Publish a compiled Windows x64 Inno Setup installer through GitHub Releases.
+- Default to all-users installation with system PATH; retain an explicit current-user option.
+- Offer model preparation during installation, with download failures reported as installation errors.
+- Download and verify the pinned FFmpeg package directly from upstream during installation instead of embedding it in the public installer.
+
 ## 0.2.0
 
 - Replace private Python/PyTorch inference with native C++ / GGML workers controlled by the Rust CLI.
